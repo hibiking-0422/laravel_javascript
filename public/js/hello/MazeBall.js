@@ -86,6 +86,7 @@ console.log(mole.digMazeField(mazeField));
 //以下canvas描写
 
 //heroオブジェクト生成
+/*
 var hero = new Object();
 hero.img = new Image();
 hero.img.src = './image/hero.jpg';
@@ -94,6 +95,25 @@ hero.moveDistance = 36;
 hero.y = hero.moveDistance;
 hero.x = hero.moveDistance;
 hero.moveSpeed = 3;
+*/
+
+class Character {
+    constructor(img){
+        //キャラクターの移動設定
+        this.move = 0;
+        this.moveDistance = 36;
+        this.y = this.moveDistance;
+        this.x = this.moveDistance;
+        this.moveSpeed = 3;
+        //キャラクターの画像設定
+        this.img = new Image();
+        this.img.src = img;
+        this.width = 30;
+        this.height = 30;
+    }
+} 
+
+
 
 //キーオブジェクト生成
 var key = new Object;
@@ -104,18 +124,52 @@ key.left = false;
 key.push = '';
 
 //canvas生成
+
 mazeBoxSize = 36;
+
+/*
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 canvas.width = mazeSize * mazeBoxSize;
 canvas.height = mazeSize * mazeBoxSize;
+*/
+
+//グローバル変数
+let canvas;
+let ctx;
+var test = new Image();
+test.src = "./image/hero.jpg";
 
 
+class GameMain {
+    constructor(width, height) {
+        this.width = width;
+        this.height = height;
+
+        canvas = document.getElementById('canvas');
+        canvas.width = this.width;
+        canvas.height = this.height;
+        ctx = canvas.getContext('2d');
+    }
+    
+    add(character) {
+        ctx.drawImage(character.img, 100,100);
+        ctx.fillRect(30,30,60,60);
+        console.log(character.img);
+    }
+}
+
+let hero = new Character('./image/hero.jpg');
+let gameMain = new GameMain(mazeSize * mazeBoxSize, mazeSize * mazeBoxSize);
+
+function main() {
+    gameMain.add(hero);
+}
+addEventListener('load', main(), false);
 
 function  drawBall() {
     ctx.clearRect(0,0,canvas.width,canvas.height);
     
-
     for(let i = 0; i < mazeSize; i++) {
         for(let j = 0; j < mazeSize; j++){
             if(mazeField[i][j] == 0){
@@ -231,5 +285,4 @@ function sleep(waitSec) {
 
 
 
-drawBall();
-document.body.appendChild(canvas);
+//drawBall();
