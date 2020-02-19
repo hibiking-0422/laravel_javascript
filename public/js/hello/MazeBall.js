@@ -1,10 +1,12 @@
-class Mole {
+class Maze { //迷路
     constructor(mazeSize) {
         this.mazeSize = mazeSize;
-        this.startY = this.getRandomOdd(mazeSize);
-        this.startX = this.getRandomOdd(mazeSize);
+        this.startY = this.getRandomOdd(this.mazeSize);
+        this.startX = this.getRandomOdd(this.mazeSize);
         this.currentY = this.startY;
         this.currentX = this.startX;
+        this.initializeMazeField(this.mazeSize);
+        this.digMazeField(this.mazeField);
     }
 
     getRandomOdd(mazeSize) { //ランダムな奇数の値を取得
@@ -12,6 +14,14 @@ class Mole {
             let num = Math.floor(Math.random() * (mazeSize - 1));
             if( num % 2 != 0) return num;
         };
+    }
+
+    initializeMazeField(mazeSize) {
+        var mazeField = new Array(mazeSize);
+        for(let i = 0; i < mazeSize; i++) {
+            mazeField[i] = new Array(mazeSize).fill(0);
+        }
+        this.mazeField = mazeField;
     }
 
     digMazeField(mazeField) { //穴を掘る
@@ -62,64 +72,33 @@ class Mole {
                 }
             }
         }
-        return mazeField;
+        this.mazeField = mazeField;
     }
-
 }
 
-let createMazeField = mazeSize => { //迷路の配列を全て0にして生成
-    mazeField = new Array(mazeSize);
-    for(let i = 0; i < mazeSize; i++) {
-        mazeField[i] = new Array(mazeSize).fill(0);
-    }
-    return mazeField
-}
-
-let mazeSize = 21;
-let mole = new Mole(mazeSize);
-mazeField = createMazeField(mazeSize);
-
-console.log(mole);
-console.log(mazeField);
-console.log(mole.digMazeField(mazeField));
-
-//以下canvas描写
-
-//heroオブジェクト生成
-/*
-var hero = new Object();
-hero.img = new Image();
-hero.img.src = './image/hero.jpg';
-hero.move  = 0;
-hero.moveDistance = 36;
-hero.y = hero.moveDistance;
-hero.x = hero.moveDistance;
-hero.moveSpeed = 3;
-*/
-
-class Character {
-    constructor(img, xPosition, yPosotion){
+class Character { //キャラクター系のスーパークラス
+    constructor(img, mazeBoxSize, xPosition, yPosotion){
         //キャラクターの移動設定
         this.move = 0;
-        this.moveDistance = 36;
+        this.moveDistance = mazeBoxSize;
         this.y = this.moveDistance * yPosotion;
         this.x = this.moveDistance * xPosition;
-        this.moveSpeed = 3;
+        this.moveSpeed = mazeBoxSize / 10;
         //キャラクターの画像設定
         this.img = new Image();
         this.img.src = img;
-        this.width = 30;
-        this.height = 30;
+        this.width = mazeBoxSize;
+        this.height = mazeBoxSize;
     }
 } 
 
-class Player extends Character {
-    constructor(img, xPosition, yPosotion, palyerName) {
-        super(img, xPosition, yPosotion);
+class Player extends Character { //操作キャラクター
+    constructor(img,mazeBoxSize, xPosition, yPosotion, palyerName) {
+        super(img,mazeBoxSize, xPosition, yPosotion);
         this.palyerName = palyerName;
     }
 
-    movePlayer() {
+    movePlayer(mazeField) {
         input.push_key();
         if(this.move === 0) {
             var x = this.x / this.moveDistance;
@@ -168,48 +147,38 @@ class Player extends Character {
     }
 }
 
-/*
-//キーオブジェクト生成
-var key = new Object;
-key.up = false;
-key.down = false;
-key.right = false;
-key.left = false;
-key.push = '';
-*/
-
-//canvas生成
-
-mazeBoxSize = 36;
-
-/*
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-canvas.width = mazeSize * mazeBoxSize;
-canvas.height = mazeSize * mazeBoxSize;
-*/
-
-//グローバル変数
-let canvas;
-let ctx;
-
-class GameMain {
+class GameMain { //ゲームのメイン処理
     constructor(width, height) {
         this.width = width;
         this.height = height;
 
         canvas = document.getElementById('canvas');
         canvas.width = this.width;
-        canvas.height = this.height;
+        canvas.height = this.height * 1.5;
         ctx = canvas.getContext('2d');
     }
     
     add(character) {
-        ctx.drawImage(character.img, character.x, character.y);
+        ctx.drawImage(character.img, character.x, character.y, character.width, character.height);
+    }
+
+    drawMazeField(mazeField) {
+        for(let i = 0; i < mazeSize; i++) {
+            for(let j = 0; j < mazeSize; j++){
+                if(mazeField[i][j] == 0){
+                    ctx.fillStyle="black"; 
+                }else if(mazeField[i][j] == 2){
+                    ctx.fillStyle="red";
+                }else {
+                    ctx.fillStyle="white"; 
+                }
+                ctx.fillRect(j * mazeBoxSize, i * mazeBoxSize, (j * mazeBoxSize) + mazeBoxSize, (i * mazeBoxSize) + mazeBoxSize);
+            }
+        }
     }
 }
 
-class Input {
+class Input { //キー入力処理
     constructor() {
         this.up = false;
         this.left= false;
@@ -226,7 +195,6 @@ class Input {
             if(key_code === 39) this.right = true;
             if(key_code === 40) this.down = true;
             event.preventDefault(); //方向キーでブラウザのスクロールを止められる(みたい)
-
         }, false);
 
         addEventListener("keyup", () => {
@@ -239,127 +207,49 @@ class Input {
     }
 }
 
-let player = new Player('./image/hero.jpg', 1, 1, "hibiking");
-let gameMain = new GameMain(mazeSize * mazeBoxSize, mazeSize * mazeBoxSize);
-let input = new Input();
-console.log(player);
-function main() {
+function main() { //メイン関数
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    for(let i = 0; i < mazeSize; i++) {
-        for(let j = 0; j < mazeSize; j++){
-            if(mazeField[i][j] == 0){
-                ctx.fillStyle="black"; 
-            }else if(mazeField[i][j] == 2){
-                ctx.fillStyle="red";
-            }else {
-                ctx.fillStyle="white"; 
-            }
-            ctx.fillRect(j * mazeBoxSize, i * mazeBoxSize, (j * mazeBoxSize) + mazeBoxSize, (i * mazeBoxSize) + mazeBoxSize);
-        }
-    }
-
-    gameMain.add(player);
-    player.movePlayer();
     
+    game.drawMazeField(maze.mazeField);
+
+    game.add(player);
+    player.movePlayer(maze.mazeField);
+    
+    ctx.fillStyle = "white";
+    ctx.fillRect(mazeBoxSize, mazeBoxSize * mazeSize,mazeBoxSize * (mazeSize - 2), canvas.height - (mazeBoxSize * (mazeSize + 1)));
+    
+    
+    ctx.fillStyle="black";
+    ctx.font = "20px serif";
+
+    let p = 0;
+    for(let i = num - 10; i < num; i++) {
+        
+        ctx.fillText(text[i], mazeBoxSize, mazeBoxSize * (mazeSize + 1) + p * 23);
+        p++;
+    }
+    //text.push(num++);
+
     requestAnimationFrame(main);
 }
+
+//canvas
+let canvas;
+let ctx;
+//迷路
+let mazeSize = 21;
+let mazeBoxSize = 25; //2,5,10の倍数
+let maze = new Maze(mazeSize);
+console.log(maze);
+//ゲーム
+let player = new Player('./image/hero.jpg', mazeBoxSize,1, 1, "hibiking");
+let game = new GameMain(mazeSize * mazeBoxSize, mazeSize * mazeBoxSize);
+let input = new Input();
+
+let num = 100;
+let text = new Array(num);
+
+for(let i = 0; i < num; i++) {
+    text[i] = i;
+}
 addEventListener('load', main(), false);
-
-
-/*
-function  drawBall() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    
-    for(let i = 0; i < mazeSize; i++) {
-        for(let j = 0; j < mazeSize; j++){
-            if(mazeField[i][j] == 0){
-                ctx.fillStyle="black"; 
-            }else if(mazeField[i][j] == 2){
-                ctx.fillStyle="red";
-            }else {
-                ctx.fillStyle="white"; 
-            }
-            ctx.fillRect(j * mazeBoxSize, i * mazeBoxSize, (j * mazeBoxSize) + mazeBoxSize, (i * mazeBoxSize) + mazeBoxSize);
-        }
-    }
-
-
-    addEventListener("keydown", keyDownFunc, false);
-    addEventListener("keyup", keyUpFunc, false);
-
-    if(hero.move === 0) { //キーが入力されているとき、移動。
-        var y = hero.y / hero.moveDistance;
-        var x = hero.x / hero.moveDistance;
-            
-            if(key.left === true) {
-                if(x > 0) {　//当たり判定
-                    x--;
-                    if(mazeField[y][x] === 1) {
-                        key.push = 'left';
-                        hero.move = hero.moveDistance;
-                    }
-                }
-            }
-
-            if(key.up === true) {
-                if(y > 0) {　//当たり判定
-                    y--;
-                    if(mazeField[y][x] === 1) {
-                    key.push = 'up';
-                    hero.move = hero.moveDistance;
-                    }
-                }
-            }
-
-            if(key.right === true) {
-                if(x < (mazeSize - 1)) {　//当たり判定
-                    x++;
-                    if(mazeField[y][x] === 1) {
-                        key.push = 'right';
-                        hero.move = hero.moveDistance;
-                    }
-                }
-            }
-
-            if(key.down === true) {
-                if(y < (mazeSize - 1)) {　//当たり判定
-                    y++;
-                    if(mazeField[y][x] === 1) {
-                        key.push = 'down';
-                        hero.move = hero.moveDistance;
-                    }
-                }
-            }
-    }
-
-    if(hero.move > 0) { //hero.moveの値が0になるまで(次のマスに付くまで)移動を繰り返す。
-        hero.move -= hero.moveSpeed;
-        if(key.push === 'left') hero.x -= hero.moveSpeed;
-        if(key.push === 'up') hero.y -= hero.moveSpeed;
-        if(key.push === 'right') hero.x += hero.moveSpeed;
-        if(key.push === 'down') hero.y += hero.moveSpeed;
-    }
-
-    ctx.drawImage( hero.img, hero.x, hero.y );
-    window.requestAnimationFrame(drawBall);
-}
-
-function keyDownFunc(event) {
-    var key_code = event.keyCode;
-    if(key_code === 37) key.left = true;
-    if(key_code === 38) key.up = true;
-    if(key_code === 39) key.right = true;
-    if(key_code === 40) key.down = true;
-    event.preventDefault();
-}
-
-function keyUpFunc(event) {
-    var key_code = event.keyCode;
-	if(key_code === 37) key.left = false;
-	if(key_code === 38) key.up = false;
-	if(key_code === 39) key.right = false;
-	if(key_code === 40) key.down = false;
-}
-
-//drawBall();
-*/
